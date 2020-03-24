@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class BrazeService {
@@ -30,6 +31,25 @@ public class BrazeService {
     private BrazeMetadataManager brazeMetadataManager;
 
     public MessageResponse sendByBraze(String messageId, MessageRequest request, BrazeTriggerMode mode){
+
+        BrazeMessagingRequest brazeMessagingRequest = buildBrazeMessagingRequest(request);
+
+        MessageResponse.MessageResponseBuilder messageResponseBuilder = MessageResponse.builder().messageId(messageId);
+
+        if ( mode == null || mode.equals(BrazeTriggerMode.ASYNC)){
+            // send request async
+            brazeRequestManager.submit(messageId, brazeMessagingRequest);
+            messageResponseBuilder.returnMessage("submitted");
+        }else{
+            // send request sync
+            BrazeMessagingResponse brazeMessagingResponse = brazeClient.sendCampaignMsg(brazeMessagingRequest);
+            messageResponseBuilder.returnMessage(brazeMessagingResponse.getMessage());
+        }
+
+        return messageResponseBuilder.build();
+    }
+
+    private BrazeMessagingRequest buildBrazeMessagingRequest(MessageRequest request){
 
         BrazeMessagingRequest.BrazeMessagingRequestBuilder builder = BrazeMessagingRequest.builder();
 
@@ -71,25 +91,7 @@ public class BrazeService {
         builder.recipients(Arrays.asList(recipient));
 
         // build request
-        BrazeMessagingRequest brazeMessagingRequest = builder.build();
-
-        if ( mode == null || mode.equals(BrazeTriggerMode.ASYNC)){
-            // send request async
-            brazeRequestManager.submit(messageId, brazeMessagingRequest);
-        }else{
-            // send request sync
-            BrazeMessagingResponse brazeMessagingResponse = brazeClient.sendCampaignMsg(brazeMessagingRequest);
-        }
-
-        return null;
-
-        // TODO messageId logic
-//        MessageResponse messageResponse = MessageResponse.builder()
-//                .messageId(brazeMessagingResponse.getDispatchId())
-//                .returnMessage(brazeMessagingResponse.getMessage())
-//                .build();
-
-//        return messageResponse;
+        return builder.build();
     }
 
 
@@ -111,5 +113,18 @@ public class BrazeService {
             }
         }
         return campaignMetadata.getId();
+    }
+
+    public MessageResponse getMessageResponseAsync(String messageId){
+        ConcurrentHashMap<String, BrazeMessagingResponseWrapper> asyncResponseMap = brazeRequestManager.getAsyncResponseMap();
+        BrazeMessagingResponseWrapper brazeMessagingResponseWrapper = asyncResponseMap.get(messageId);
+        MessageResponse.MessageResponseBuilder messageResponseBuilder = MessageResponse.builder().messageId(messageId);
+        if (brazeMessagingResponseWrapper.isError()){
+            messageResponseBuilder.returnMessage(brazeMessagingResponseWrapper.getException().toString());
+        }else{
+            messageResponseBuilder.returnMessage(brazeMessagingResponseWrapper.getBrazeMessagingResponse().getMessage());
+        }
+        return messageResponseBuilder.build();
+
     }
 }
