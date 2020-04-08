@@ -1,11 +1,11 @@
 package com.stubhub.messaging.networkInvoke.model;
 
-import lombok.Builder;
 import lombok.Data;
 
+/**
+ * now v1 version
+ */
 @Data
-@Builder(toBuilder = true)
 public class MessageResponse {
     private final String messageId;
-    private final String returnMessage;
 }

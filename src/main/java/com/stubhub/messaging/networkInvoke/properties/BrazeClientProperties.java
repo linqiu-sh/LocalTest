@@ -3,7 +3,7 @@ package com.stubhub.messaging.networkInvoke.properties;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(prefix="brazeClient")
+@ConfigurationProperties(prefix="braze-client")
 @Data
 public class BrazeClientProperties {
 

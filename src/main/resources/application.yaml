@@ -1,9 +1,13 @@
-brazeClient:
+braze-client:
   endpoint: https://rest.iad-06.braze.com
   api_key: ef2fa85b-296f-43da-be31-f97f73ee147b
   campaign_id: 55a56d48-8aad-42e7-b178-b0403aa2e278
   send_campaign_messages_endpoint: /campaigns/trigger/send
   get_campaigns_list_endpoint: /campaigns/list
+  retry_times: 3
+
+common-client:
+  user_customer_endpoint: http://api-int.slcq072.com/user/customers/v2/{userId}/guid
   retry_times: 3
 
 scheduler:

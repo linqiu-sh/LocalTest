@@ -7,8 +7,10 @@ import com.stubhub.messaging.networkInvoke.brazeMetadata.BrazeMetadata;
 import com.stubhub.messaging.networkInvoke.brazeMetadata.BrazeMetadataManager;
 import com.stubhub.messaging.networkInvoke.brazeMetadata.CampaignMetadata;
 import com.stubhub.messaging.networkInvoke.brazeModel.*;
-import com.stubhub.messaging.networkInvoke.model.MessageRequest;
-import com.stubhub.messaging.networkInvoke.model.MessageResponse;
+import com.stubhub.messaging.networkInvoke.exception.BrazeBusinessException;
+import com.stubhub.messaging.networkInvoke.exception.BrazeClientException;
+import com.stubhub.messaging.networkInvoke.model.BrazeRequest;
+import com.stubhub.messaging.networkInvoke.model.BrazeResponse;
 import com.stubhub.messaging.networkInvoke.properties.BrazeClientProperties;
 import com.stubhub.messaging.networkInvoke.repository.BrazeClient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,26 +32,40 @@ public class BrazeService {
     @Autowired
     private BrazeMetadataManager brazeMetadataManager;
 
-    public MessageResponse sendByBraze(String messageId, MessageRequest request, BrazeTriggerMode mode){
+    public BrazeResponse sendByBraze(String messageId, BrazeRequest request, BrazeTriggerMode mode){
 
-        BrazeMessagingRequest brazeMessagingRequest = buildBrazeMessagingRequest(request);
+        BrazeResponse.BrazeResponseBuilder brazeResponseBuilder = BrazeResponse.builder().messageId(messageId);
 
-        MessageResponse.MessageResponseBuilder messageResponseBuilder = MessageResponse.builder().messageId(messageId);
+        BrazeMessagingRequest brazeMessagingRequest;
+
+        try {
+            brazeMessagingRequest = buildBrazeMessagingRequest(request);
+        } catch (BrazeBusinessException e) {
+            brazeResponseBuilder.returnMessage(e.getMessage());
+            return brazeResponseBuilder.build();
+        }
+
 
         if ( mode == null || mode.equals(BrazeTriggerMode.ASYNC)){
             // send request async
             brazeRequestManager.submit(messageId, brazeMessagingRequest);
-            messageResponseBuilder.returnMessage("submitted");
+            brazeResponseBuilder.returnMessage("submitted");
         }else{
             // send request sync
-            BrazeMessagingResponse brazeMessagingResponse = brazeClient.sendCampaignMsg(brazeMessagingRequest);
-            messageResponseBuilder.returnMessage(brazeMessagingResponse.getMessage());
+            try {
+                BrazeMessagingResponse brazeMessagingResponse = brazeClient.sendCampaignMsg(brazeMessagingRequest);
+                brazeResponseBuilder.returnMessage(brazeMessagingResponse.getMessage());
+            }catch (BrazeClientException e){
+                brazeResponseBuilder.returnMessage(e.getMessage());
+            }
+
+
         }
 
-        return messageResponseBuilder.build();
+        return brazeResponseBuilder.build();
     }
 
-    private BrazeMessagingRequest buildBrazeMessagingRequest(MessageRequest request){
+    private BrazeMessagingRequest buildBrazeMessagingRequest(BrazeRequest request) throws BrazeBusinessException {
 
         BrazeMessagingRequest.BrazeMessagingRequestBuilder builder = BrazeMessagingRequest.builder();
 
@@ -58,12 +74,8 @@ public class BrazeService {
 
         // 2. set template id or campaign name or ...
         String templateName = request.getTemplateName();
-        String campaignId = getCampaignIdbyTemplateName(templateName);
-        if (campaignId == null){
-            //TODO log can not get templateName -> campaignId ERROR
-            // throw exception
-            return null;
-        }
+
+        String campaignId = brazeMetadataManager.getCampaignIdbyTemplateName(templateName);
         builder.campaignId(campaignId);
 
         // 3. set recipient
@@ -71,7 +83,7 @@ public class BrazeService {
         // 1) set target user
         String guid = request.getUserGuid();
         if (guid == null || guid.isEmpty()){
-            //TODO get user guid by user id from user service
+            //TODO raise exception
             guid = "alex_qiu_test";
         }
         recipient.setExternalUserId(guid);
@@ -80,7 +92,7 @@ public class BrazeService {
         Attributes attributes = new Attributes();
         String email = request.getEmail();
         if (email == null || email.isEmpty()){
-            //TODO get user email by user id from user service
+            //TODO raise exception
             email = "linqiu@stubhub.com";
         }
         attributes.setEmail(email);
@@ -95,36 +107,36 @@ public class BrazeService {
     }
 
 
-    private String getCampaignIdbyTemplateName(String templateName){
-        Timestamp now = new Timestamp(System.currentTimeMillis());
-        BrazeMetadata brazeMetadata = brazeMetadataManager.getBrazeMetadata();
-        if (brazeMetadata == null) {
-            brazeMetadataManager.requestUpdateMetadata();
-            brazeMetadata = brazeMetadataManager.getBrazeMetadataSync();
-        }
-        CampaignMetadata campaignMetadata = brazeMetadata.getCampaignMetadataByName(templateName);
-        if (campaignMetadata == null || campaignMetadata.getId() == null || campaignMetadata.getId().isEmpty()) {
-            if (brazeMetadataManager.getLastUpdateTime().after(now)){
-                return null;
-            }else{
-                //try to update
-                brazeMetadataManager.requestUpdateMetadata();
-                campaignMetadata = brazeMetadataManager.getBrazeMetadataSync().getCampaignMetadataByName(templateName);
-            }
-        }
-        return campaignMetadata.getId();
-    }
+//    private String getCampaignIdbyTemplateName(String templateName){
+//        Timestamp now = new Timestamp(System.currentTimeMillis());
+//        BrazeMetadata brazeMetadata = brazeMetadataManager.getBrazeMetadata();
+//        if (brazeMetadata == null) {
+//            brazeMetadataManager.requestUpdateMetadata();
+//            brazeMetadata = brazeMetadataManager.getBrazeMetadataSync();
+//        }
+//        CampaignMetadata campaignMetadata = brazeMetadata.getCampaignMetadataByName(templateName);
+//        if (campaignMetadata == null || campaignMetadata.getId() == null || campaignMetadata.getId().isEmpty()) {
+//            if (brazeMetadataManager.getLastUpdateTime().after(now)){
+//                return null;
+//            }else{
+//                //try to update
+//                brazeMetadataManager.requestUpdateMetadata();
+//                campaignMetadata = brazeMetadataManager.getBrazeMetadataSync().getCampaignMetadataByName(templateName);
+//            }
+//        }
+//        return campaignMetadata.getId();
+//    }
 
-    public MessageResponse getMessageResponseAsync(String messageId){
+    public BrazeResponse getMessageResponseAsync(String messageId){
         ConcurrentHashMap<String, BrazeMessagingResponseWrapper> asyncResponseMap = brazeRequestManager.getAsyncResponseMap();
         BrazeMessagingResponseWrapper brazeMessagingResponseWrapper = asyncResponseMap.get(messageId);
-        MessageResponse.MessageResponseBuilder messageResponseBuilder = MessageResponse.builder().messageId(messageId);
+        BrazeResponse.BrazeResponseBuilder brazeResponseBuilder = BrazeResponse.builder().messageId(messageId);
         if (brazeMessagingResponseWrapper.isError()){
-            messageResponseBuilder.returnMessage(brazeMessagingResponseWrapper.getException().toString());
+            brazeResponseBuilder.returnMessage(brazeMessagingResponseWrapper.getException().toString());
         }else{
-            messageResponseBuilder.returnMessage(brazeMessagingResponseWrapper.getBrazeMessagingResponse().getMessage());
+            brazeResponseBuilder.returnMessage(brazeMessagingResponseWrapper.getBrazeMessagingResponse().getMessage());
         }
-        return messageResponseBuilder.build();
+        return brazeResponseBuilder.build();
 
     }
 }

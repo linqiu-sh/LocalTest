@@ -4,6 +4,7 @@ import com.stubhub.messaging.networkInvoke.brazeModel.BrazeMessagingRequest;
 import com.stubhub.messaging.networkInvoke.brazeModel.BrazeMessagingResponse;
 import com.stubhub.messaging.networkInvoke.brazeModel.BrazeMessagingResponseWrapper;
 import com.stubhub.messaging.networkInvoke.repository.BrazeClient;
+import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -11,6 +12,7 @@ import javax.annotation.PostConstruct;
 import java.util.concurrent.*;
 
 @Component
+@Data
 public class BrazeRequestManager {
 
     @Autowired

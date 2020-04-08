@@ -15,9 +15,14 @@ import static org.springframework.http.MediaType.APPLICATION_XML_VALUE;
 @RequestMapping(path = "/messaging/v3")
 public interface BrazeAPI {
 
+    /**
+     * only used for test!!!
+     * @return
+     */
     @RequestMapping(method = RequestMethod.GET, path = "/")
     @ResponseBody String home();
 
-    @RequestMapping(method = RequestMethod.POST, path = "/braze/send")
+    @RequestMapping(method = RequestMethod.POST, path = "/braze/message")
     @ResponseBody MessageResponse sendByBraze(@Valid @RequestBody MessageRequest request);
+
 }

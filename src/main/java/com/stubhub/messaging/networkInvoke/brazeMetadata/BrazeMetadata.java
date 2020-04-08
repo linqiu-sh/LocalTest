@@ -2,7 +2,7 @@ package com.stubhub.messaging.networkInvoke.brazeMetadata;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Getter
@@ -10,7 +10,7 @@ import java.util.Map;
 public class BrazeMetadata {
 
     private final Map<String, CampaignMetadata> name2CampaignMap;
-    private final Map<String, CampaignMetadata> tag2CampaignMap;
+    private final Map<String, List<CampaignMetadata>> tag2CampaignMap;
 
     public CampaignMetadata getCampaignMetadataByName(String name){
         if (name2CampaignMap == null || name2CampaignMap.isEmpty()){
@@ -20,7 +20,7 @@ public class BrazeMetadata {
         return name2CampaignMap.get(name);
     }
 
-    public CampaignMetadata getCampaignMetadataByTag(String tag){
+    public List<CampaignMetadata> getCampaignMetadataByTag(String tag){
         if (tag2CampaignMap == null || tag2CampaignMap.isEmpty()){
             return null;
         }

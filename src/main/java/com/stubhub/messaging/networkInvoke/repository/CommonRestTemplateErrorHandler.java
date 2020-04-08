@@ -1,7 +1,10 @@
 package com.stubhub.messaging.networkInvoke.repository;
 
 import com.stubhub.messaging.networkInvoke.exception.BrazeClientException;
+import com.stubhub.messaging.networkInvoke.exception.CommonClientException;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.web.client.DefaultResponseErrorHandler;
@@ -14,7 +17,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 
 @Slf4j
-public class BrazeRestTemplateErrorHandler implements ResponseErrorHandler {
+public class CommonRestTemplateErrorHandler implements ResponseErrorHandler {
 
     private ResponseErrorHandler errorHandler = new DefaultResponseErrorHandler();
 
@@ -29,7 +32,7 @@ public class BrazeRestTemplateErrorHandler implements ResponseErrorHandler {
         try {
             errorHandler.handleError(response);
         } catch (RestClientException scx) {
-            throw new BrazeClientException(scx, convertStreamToString(response.getBody()), scx.getMessage(), statusCode);
+            throw new CommonClientException(scx, convertStreamToString(response.getBody()), scx.getMessage(), statusCode);
         }
 
     }

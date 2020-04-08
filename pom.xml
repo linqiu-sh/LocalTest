@@ -50,7 +50,56 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
+
+<!--		V1 client-->
+<!--		<dependency>-->
+<!--			<groupId>com.stubhub.domain.infrastructure.communication</groupId>-->
+<!--			<artifactId>com.stubhub.domain.infrastructure.communication.client</artifactId>-->
+<!--			<version>1.0.85</version>-->
+<!--		</dependency>-->
+
+<!--		Maven: com.stubhub.domain.user:com.stubhub.domain.user.services.customers.v2.intf:1.3.151-->
+		<dependency>
+			<groupId>com.stubhub.domain.user</groupId>
+			<artifactId>com.stubhub.domain.user.services.customers.v2.intf</artifactId>
+			<version>1.3.151</version>
+		</dependency>
+		<dependency>
+			<groupId>com.stubhub.domain.user</groupId>
+			<artifactId>com.stubhub.domain.user.services.customers.v2.intf</artifactId>
+			<version>1.3.151</version>
+		</dependency>
 	</dependencies>
+
+	<repositories>
+		<repository>
+			<releases>
+				<enabled>true</enabled>
+				<updatePolicy>never</updatePolicy>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+			<id>stubhub-public</id>
+			<name>Stubhub Systems Public Repository</name>
+			<url>https://mvnrepository.stubcorp.com/nexus/content/groups/stubhub-public/</url>
+			<layout>default</layout>
+		</repository>
+		<repository>
+			<releases>
+				<enabled>false</enabled>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+				<updatePolicy>daily</updatePolicy>
+				<checksumPolicy>ignore</checksumPolicy>
+			</snapshots>
+			<id>stubhub-public-snapshots</id>
+			<name>Stubhub Systems Public Snapshots Repository</name>
+			<url>https://mvnrepository.stubcorp.com/nexus/content/groups/stubhub-public-snapshots/</url>
+			<layout>default</layout>
+		</repository>
+	</repositories>
 
 	<build>
 		<plugins>

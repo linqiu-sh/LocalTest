@@ -31,6 +31,7 @@ public class BrazeSendMsgTask implements Callable<BrazeMessagingResponseWrapper>
         }catch (Exception e){
             brazeMessagingResponseWrapper = new BrazeMessagingResponseWrapper(messageId, null, e, true);
         }
+        // TODO remove sout
         System.out.println(Thread.currentThread() + ":");
         System.out.println("messageId:"+messageId);
         System.out.println("response:"+brazeMessagingResponse.toString());

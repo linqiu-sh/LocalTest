@@ -1,22 +1,26 @@
 package com.stubhub.messaging.networkInvoke.brazeMetadata;
 
-import com.stubhub.messaging.networkInvoke.async.BrazeRequestManager;
+import com.stubhub.messaging.networkInvoke.exception.BrazeBusinessException;
 import com.stubhub.messaging.networkInvoke.repository.BrazeClient;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.sql.Timestamp;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 
+@Slf4j
 @Data
+@Component
 public class BrazeMetadataManager {
 
-    private volatile BrazeMetadata brazeMetadata;
+    private volatile BrazeMetadata brazeMetadata;   //snapshot
     private volatile boolean isUpdating;
     private volatile Timestamp lastUpdateTime;
-    private volatile Future<BrazeMetadata> future;
+
+    private CountDownLatch latch;
 
     @Autowired
     private ExecutorService brazeMetadataTaskPool;
@@ -39,17 +43,17 @@ public class BrazeMetadataManager {
         protected void done() {
             try {
                 brazeMetadata = task.get();
+
+                isUpdating = false;
+                lastUpdateTime = new Timestamp(System.currentTimeMillis());
+                latch.countDown();
             } catch (InterruptedException e) {
-                //TODO Log interrupt
-                e.printStackTrace();
+                log.error("BrazeMetadata Updating is interrupted! Exception={}", e.toString());
             } catch (ExecutionException e) {
-                //TODO Log interrupt
-                //TODO ERROR Handling
-                e.printStackTrace();
+                log.error("BrazeMetadata Updating contains ExecutionException, reupdating! Exception={}", e.toString());
+                brazeMetadataTaskPool.submit(new QueueingFuture(new FutureTask<>(new BrazeMetadataUpdateTask(brazeClient))));
             }
-            isUpdating = false;
-            lastUpdateTime = new Timestamp(System.currentTimeMillis());
-            notifyAll();
+
         }
     }
 
@@ -58,20 +62,35 @@ public class BrazeMetadataManager {
             return;
         }
         isUpdating = true;
-        future = (Future<BrazeMetadata>) brazeMetadataTaskPool.submit(new QueueingFuture(new FutureTask<>(new BrazeMetadataUpdateTask(brazeClient))));
+        latch = new CountDownLatch(1);
+        brazeMetadataTaskPool.submit(new QueueingFuture(new FutureTask<>(new BrazeMetadataUpdateTask(brazeClient))));
     }
 
-    public BrazeMetadata getBrazeMetadataSync() {
-        if (future == null){
-            requestUpdateMetadata();
+
+    public String getCampaignIdbyTemplateName(String templateName) throws BrazeBusinessException {
+        if (brazeMetadata != null){
+            CampaignMetadata campaignMetadata = brazeMetadata.getCampaignMetadataByName(templateName);
+            if (campaignMetadata != null){
+                String id = campaignMetadata.getId();
+                if (id != null && !id.isEmpty()){
+                    return id;  //success
+                }
+            }
         }
+
+        // metadata == null or not contains the campaign (may be newly added)
+        // update metadata
+        requestUpdateMetadata();
 
         try {
-            future.get();   //just to wait
-        } catch (ExecutionException e) {
+            latch.await();
         } catch (InterruptedException e) {
+            log.error("Wait for Compaign Id is interrupted! TemplateName={}, exception={}", templateName, e.toString());
+            throw new BrazeBusinessException("Wait for Compaign Id is interrupted!");
         }
 
-        return brazeMetadata;
+        return getCampaignIdbyTemplateName(templateName);
+
     }
+
 }
