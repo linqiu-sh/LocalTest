@@ -1,19 +1,17 @@
 package com.stubhub.messaging.networkInvoke.async;
 
 import com.stubhub.messaging.networkInvoke.brazeModel.BrazeMessagingRequest;
-import com.stubhub.messaging.networkInvoke.brazeModel.BrazeMessagingResponse;
-import com.stubhub.messaging.networkInvoke.brazeModel.BrazeMessagingResponseWrapper;
+import com.stubhub.messaging.networkInvoke.brazeModel.BrazeResponseWrapper;
 import com.stubhub.messaging.networkInvoke.repository.BrazeClient;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.util.concurrent.*;
 
 @Component
 @Data
-public class BrazeRequestManager {
+public class BrazeTaskManager {
 
     @Autowired
     private ExecutorService sendingRequestsTaskPool;
@@ -26,31 +24,43 @@ public class BrazeRequestManager {
     @Autowired
     private BrazeClient brazeClient;
 
-    private final ConcurrentHashMap<String, BrazeMessagingResponseWrapper> asyncResponseMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, BrazeResponseWrapper> asyncResponseMap = new ConcurrentHashMap<>();
 
 
-    private class QueueingFuture extends FutureTask<BrazeMessagingResponseWrapper> {
-        QueueingFuture(RunnableFuture<BrazeMessagingResponseWrapper> task) {
+    private class OneStepFutureTask extends FutureTask<BrazeResponseWrapper> {
+        OneStepFutureTask(RunnableFuture<BrazeResponseWrapper> task) {
             super(task, null);
             this.task = task;
         }
-        private final Future<BrazeMessagingResponseWrapper> task;
+        private final Future<BrazeResponseWrapper> task;
 
         protected void done() {
             sendingResponsesHandlingTaskPool.submit(new BrazeHandleMsgResponseTask(task, asyncResponseMap));
         }
     }
 
+//    private class LoopbackFutureTask extends FutureTask<BrazeResponseWrapper> {
+//        LoopbackFutureTask(RunnableFuture<BrazeResponseWrapper> task) {
+//            super(task, null);
+//            this.task = task;
+//        }
+//        private final Future<BrazeResponseWrapper> task;
+//
+//        protected void done() {
+//            sendingRequestsTaskPool.submit(new BrazeHandleMsgResponseTask(task, asyncResponseMap));
+//        }
+//    }
+
     public void submit(String messageId, BrazeMessagingRequest request) {
         if (request == null){
             return;
         }
-        sendingRequestsTaskPool.submit(new QueueingFuture(new FutureTask<>(new BrazeSendMsgTask(request, brazeClient, messageId))));
+        sendingRequestsTaskPool.submit(new OneStepFutureTask(new FutureTask<>(new BrazeSendMsgTask(request, brazeClient, messageId))));
         return;
     }
 
 
-    public ConcurrentHashMap<String, BrazeMessagingResponseWrapper> getAsyncResponseMap() {
+    public ConcurrentHashMap<String, BrazeResponseWrapper> getAsyncResponseMap() {
         return asyncResponseMap;
     }
 }

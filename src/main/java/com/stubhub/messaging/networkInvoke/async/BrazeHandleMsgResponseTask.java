@@ -1,13 +1,11 @@
 package com.stubhub.messaging.networkInvoke.async;
 
 import com.stubhub.messaging.networkInvoke.brazeModel.BrazeMessagingResponse;
-import com.stubhub.messaging.networkInvoke.brazeModel.BrazeMessagingResponseWrapper;
-import com.stubhub.messaging.networkInvoke.exception.BrazeBusinessException;
+import com.stubhub.messaging.networkInvoke.brazeModel.BrazeResponse;
+import com.stubhub.messaging.networkInvoke.brazeModel.BrazeResponseWrapper;
 import com.stubhub.messaging.networkInvoke.exception.BrazeClientException;
-import com.stubhub.messaging.networkInvoke.util.BrazeMessagingResponseHelper;
+import com.stubhub.messaging.networkInvoke.util.BrazeResponseHelper;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -16,14 +14,14 @@ import java.util.concurrent.Future;
 @Slf4j
 public class BrazeHandleMsgResponseTask implements Runnable {
 
-    private Future<BrazeMessagingResponseWrapper> responseFuture;
+    private Future<BrazeResponseWrapper> responseFuture;
 
-    private ConcurrentHashMap<String, BrazeMessagingResponseWrapper> asyncResponseMap;
+    private ConcurrentHashMap<String, BrazeResponseWrapper> asyncResponseMap;
 
     private BrazeHandleMsgResponseTask(){}
 
-    public BrazeHandleMsgResponseTask(Future<BrazeMessagingResponseWrapper> responseFuture,
-                                      ConcurrentHashMap<String, BrazeMessagingResponseWrapper> asyncResponseMap) {
+    public BrazeHandleMsgResponseTask(Future<BrazeResponseWrapper> responseFuture,
+                                      ConcurrentHashMap<String, BrazeResponseWrapper> asyncResponseMap) {
         this.responseFuture = responseFuture;
         this.asyncResponseMap = asyncResponseMap;
     }
@@ -32,9 +30,9 @@ public class BrazeHandleMsgResponseTask implements Runnable {
     public void run() {
         // TODO universal log is needed
 
-        BrazeMessagingResponseWrapper brazeMessagingResponseWrapper;
+        BrazeResponseWrapper brazeResponseWrapper;
         try {
-            brazeMessagingResponseWrapper = responseFuture.get();
+            brazeResponseWrapper = responseFuture.get();
         } catch (InterruptedException e) {
             log.warn("Thread Interrupted in BrazeHandleMsgResponseTask! Thread={}, Exception={}", Thread.currentThread(), e.toString());
             return;
@@ -45,9 +43,9 @@ public class BrazeHandleMsgResponseTask implements Runnable {
             return;
         }
 
-        if (brazeMessagingResponseWrapper.isError()){
+        if (brazeResponseWrapper.isError()){
             // should be
-            Exception exception = brazeMessagingResponseWrapper.getException();
+            Exception exception = brazeResponseWrapper.getException();
             if (exception instanceof BrazeClientException){
                 BrazeClientException brazeClientException = (BrazeClientException) exception;
                 log.error("Braze Client Exception handled in BrazeHandleMsgResponseTask! HTTPStatus={}, ExceptionBody={}, ExceptionMessage={}"
@@ -60,16 +58,16 @@ public class BrazeHandleMsgResponseTask implements Runnable {
 
             }
         }else {
-            if (!BrazeMessagingResponseHelper.isSuccess(brazeMessagingResponseWrapper.getBrazeMessagingResponse())){
+            if (!BrazeResponseHelper.isSuccess(brazeResponseWrapper.getBrazeResponse())){
                 // TODO braze business error, resend or not?
                 //TODO CURRENT not resend
-                BrazeMessagingResponse brazeMessagingResponse = brazeMessagingResponseWrapper.getBrazeMessagingResponse();
+                BrazeResponse brazeResponse = brazeResponseWrapper.getBrazeResponse();
 
-//                BrazeBusinessException brazeBusinessException = new BrazeBusinessException(brazeMessagingResponse.getMessage());
-//                brazeMessagingResponseWrapper.setError(true);
-//                brazeMessagingResponseWrapper.setException(brazeBusinessException);
+//                BrazeBusinessException brazeBusinessException = new BrazeBusinessException(brazeResponse.getMessage());
+//                brazeResponseWrapper.setError(true);
+//                brazeResponseWrapper.setException(brazeBusinessException);
 
-                log.error("Braze Business Exception handled in BrazeHandleMsgResponseTask! BrazeMessage={}", brazeMessagingResponse.getMessage());
+                log.error("Braze Business Exception handled in BrazeHandleMsgResponseTask! BrazeMessage={}", brazeResponse.getMessage());
                 return;
             }
         }
@@ -78,7 +76,7 @@ public class BrazeHandleMsgResponseTask implements Runnable {
 
         //TODO callback may be more acceptable
         //TODO put item here, need to take elsewhere, be aware of memory
-//        asyncResponseMap.put(brazeMessagingResponseWrapper.getMessageId(), brazeMessagingResponseWrapper);
+//        asyncResponseMap.put(brazeResponseWrapper.getMessageId(), brazeResponseWrapper);
 
 
         //handle exception except BrazeClientException

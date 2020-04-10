@@ -7,10 +7,10 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class BrazeMessagingResponseWrapper {
+public class BrazeResponseWrapper {
 
     private String messageId;
-    private BrazeMessagingResponse brazeMessagingResponse;
+    private BrazeResponse brazeResponse;
     private Exception exception;
     private boolean error;
 }

@@ -8,14 +8,10 @@ import com.stubhub.messaging.networkInvoke.repository.BrazeClient;
 import com.stubhub.messaging.networkInvoke.repository.CommonClient;
 import com.stubhub.messaging.networkInvoke.service.BrazeService;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Pattern;
 import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.List;
@@ -46,7 +42,7 @@ public class BrazeController implements BrazeAPI {
     /**
      *    Type=Strong
      *    Type=V2
-     *    Type=V1                  Type=V3(now V1)                Type=BrazeRequest(from V1 to Braze)
+     *    Type=V1                  Type=V3(now V1)                Type=BrazeUnifiedRequest(from V1 to Braze)
      * -----------> req transform -----------------> v3 platform ------------------------------------> BrazeChannel
      * @param request
      * @return
@@ -58,14 +54,14 @@ public class BrazeController implements BrazeAPI {
 
         BrazeTriggerMode brazeMode = BrazeTriggerMode.ASYNC;
 
-        BrazeRequest brazeRequest = requestTransformToBraze(request);
-        log.info("Braze Request: " + brazeRequest);
+        BrazeUnifiedRequest brazeUnifiedRequest = requestTransformToBraze(request);
+        log.info("Braze Request: " + brazeUnifiedRequest);
 
-        BrazeResponse brazeResponse = brazeService.sendByBraze(messageId, brazeRequest, brazeMode);
+        BrazeUnifiedResponse brazeUnifiedResponse = brazeService.sendByBraze(messageId, brazeUnifiedRequest, brazeMode);
 
-        log.info("Braze Response: " + brazeResponse);
+        log.info("Braze Response: " + brazeUnifiedResponse);
 
-        MessageResponse messageResponse = responseTransformFromBraze(brazeResponse);
+        MessageResponse messageResponse = responseTransformFromBraze(brazeUnifiedResponse);
 
         return messageResponse;
     }
@@ -75,8 +71,8 @@ public class BrazeController implements BrazeAPI {
      * @param request
      * @return
      */
-    private BrazeRequest requestTransformToBraze(MessageRequest request){
-        BrazeRequest.BrazeRequestBuilder builder = BrazeRequest.builder();
+    private BrazeUnifiedRequest requestTransformToBraze(MessageRequest request){
+        BrazeUnifiedRequest.BrazeUnifiedRequestBuilder builder = BrazeUnifiedRequest.builder();
 
         String userId = request.getUserId();
         builder.userId(userId);
@@ -119,8 +115,8 @@ public class BrazeController implements BrazeAPI {
     }
 
 
-    private MessageResponse responseTransformFromBraze(BrazeResponse brazeResponse){
-        return new MessageResponse(brazeResponse.getMessageId());
+    private MessageResponse responseTransformFromBraze(BrazeUnifiedResponse brazeUnifiedResponse){
+        return new MessageResponse(brazeUnifiedResponse.getMessageId());
     }
 
 

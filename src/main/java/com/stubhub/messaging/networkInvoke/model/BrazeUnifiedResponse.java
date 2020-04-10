@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 @Builder(toBuilder = true)
-public class BrazeResponse {
+public class BrazeUnifiedResponse {
     private final String messageId;
     private final String returnMessage;
 }

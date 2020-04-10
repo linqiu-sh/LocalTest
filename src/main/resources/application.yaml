@@ -2,8 +2,10 @@ braze-client:
   endpoint: https://rest.iad-06.braze.com
   api_key: ef2fa85b-296f-43da-be31-f97f73ee147b
   campaign_id: 55a56d48-8aad-42e7-b178-b0403aa2e278
+  subscription_group_id: 21b5d284-fc5b-4b96-99c1-b8279eb05799
   send_campaign_messages_endpoint: /campaigns/trigger/send
   get_campaigns_list_endpoint: /campaigns/list
+  set_subscription_group_endpoint: /subscription/status/set
   retry_times: 3
 
 common-client:

@@ -25,6 +25,30 @@ public class BrazeClient {
     @Autowired
     private BrazeClientProperties brazeClientProperties;
 
+    public BrazeResponse setUserSubscriptionGroup(BrazeSubscriptionGroupRequest request) throws RestClientException {
+        String uri = brazeClientProperties.getEndpoint() + brazeClientProperties.getSetSubscriptionGroupEndpoint();
+
+        BrazeResponse brazeResponse = null;
+
+        int retryTimes = brazeClientProperties.getRetryTimes();
+        boolean isError = false;
+        do {
+            try {
+                brazeResponse = brazeRestTemplate.postForObject(uri, request, BrazeResponse.class);
+            }catch (BrazeClientException e){
+                isError = e.getStatusCode().isError();
+                retryTimes--;
+                if (isError){
+                    log.error("Exception in BrazeClient.setUserSubscriptionGroup(), retryTimes={}, exception={}", retryTimes, e.toString());
+                    if (retryTimes == 0){
+                        throw e;
+                    }
+                }
+            }
+        }while (isError && retryTimes > 0);
+
+        return brazeResponse;
+    }
 
     public BrazeMessagingResponse sendCampaignMsg(BrazeMessagingRequest request) throws RestClientException {
         String uri = brazeClientProperties.getEndpoint() + brazeClientProperties.getSendCampaignMessagesEndpoint();

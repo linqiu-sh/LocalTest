@@ -10,8 +10,10 @@ public class BrazeClientProperties {
     private String endpoint;
     private String apiKey;
     private String campaignId;
+    private String subscriptionGroupId;
     private String sendCampaignMessagesEndpoint;
     private String getCampaignsListEndpoint;
+    private String setSubscriptionGroupEndpoint;
     private int retryTimes;
 
 }

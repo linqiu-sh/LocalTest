@@ -9,10 +9,8 @@ import java.util.List;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class BrazeListCampaignsResponse {
+public class BrazeListCampaignsResponse extends BrazeResponse {
 
     @JsonProperty("campaigns")
     private List<CampaignMetadata> campaigns;
-    @JsonProperty("message")
-    private String message;
 }

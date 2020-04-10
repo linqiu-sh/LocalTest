@@ -6,9 +6,8 @@ import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Attributes {
-    @JsonProperty("email")
-    private String email;
-    @JsonProperty("phone")
-    private String phone;
+public class BrazeResponse {
+
+    @JsonProperty(required = true, value = "message")
+    private String message;
 }

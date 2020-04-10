@@ -6,10 +6,8 @@ import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class BrazeMessagingResponse {
+public class BrazeMessagingResponse extends BrazeResponse {
 
-    @JsonProperty(required = true, value = "message")
-    private String message;
     @JsonProperty("dispatch_id")
     private String dispatchId;
     @JsonProperty("send_id")
